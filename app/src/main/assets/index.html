@@ -1,0 +1,724 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
+<title>Plain Gauge Calculator</title>
+<style>
+
+/* Layout: a drawing sheet. Title block across the top, inputs in a narrow left column, results beside them; one column on phones. */
+:root{
+  --bg:#e8ecef;
+  --sheet:#f8fafb;
+  --field:#ffffff;
+  --ink:#13202b;
+  --muted:#566574;
+  --line:#c7d0d7;
+  --line-strong:#8c9dab;
+  --band:#dde6ed;
+  --accent:#1d4f91;
+  --accent-ink:#ffffff;
+  --go:#25774a;
+  --nogo:#b1372d;
+  --wear:#966708;
+  --f-display:'Barlow Condensed','Arial Narrow',Arial,sans-serif;
+  --f-body:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --f-mono:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f151b; --sheet:#161e26; --field:#0f161d; --ink:#e3e9ee; --muted:#93a3b0;
+    --line:#2b3844; --line-strong:#4a5c6b; --band:#223140;
+    --accent:#7db0ee; --accent-ink:#0b1722; --go:#5cc08a; --nogo:#f0877b; --wear:#e2b457;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0f151b; --sheet:#161e26; --field:#0f161d; --ink:#e3e9ee; --muted:#93a3b0;
+  --line:#2b3844; --line-strong:#4a5c6b; --band:#223140;
+  --accent:#7db0ee; --accent-ink:#0b1722; --go:#5cc08a; --nogo:#f0877b; --wear:#e2b457;
+  color-scheme: dark;
+}
+*{box-sizing:border-box}
+body{
+  background:var(--bg); color:var(--ink);
+  font:400 14px/1.5 var(--f-body);
+  padding-block:20px 32px;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));
+  padding-right:max(16px, env(safe-area-inset-right, 0px));
+}
+.page{width:100%;max-width:1120px;margin:0 auto;display:grid;gap:16px}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+h1,h2,h3,h4,p{margin:0}
+.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+
+/* title block */
+.tb{display:grid;grid-template-columns:minmax(0,2.2fr) repeat(3,minmax(0,1fr));border:1px solid var(--line-strong);background:var(--sheet)}
+.tb>div{padding:10px 14px;border-left:1px solid var(--line-strong);min-width:0;overflow-wrap:anywhere}
+.tb>div:first-child{border-left:0}
+.tb .k{display:block;font:600 11px/1.2 var(--f-display);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:3px}
+.tb .v{display:block;font:500 14px/1.3 var(--f-body)}
+.tb h1{font:700 34px/1 var(--f-display);letter-spacing:.02em;text-transform:uppercase;text-wrap:balance}
+@media (max-width:760px){
+  .tb{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .tb>div:first-child{grid-column:1 / -1;border-bottom:1px solid var(--line-strong)}
+  .tb>div:nth-child(2){border-left:0}
+}
+@media (max-width:480px){
+  .tb h1{font-size:28px}
+  .tb>div{padding:8px 10px}
+  .tb .v{font-size:13px}
+}
+
+.layout{display:grid;grid-template-columns:minmax(0,340px) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:860px){.layout{grid-template-columns:minmax(0,1fr)}}
+
+.panel{background:var(--sheet);border:1px solid var(--line);border-radius:4px;padding:16px;display:grid;gap:16px;min-width:0;align-content:start}
+.sec-h{font:600 13px/1.2 var(--f-display);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+fieldset{border:0;padding:0;margin:0;min-width:0;display:grid;gap:6px}
+legend{padding:0;margin-bottom:6px;font:500 13px/1.3 var(--f-body);color:var(--ink)}
+.lab{font:500 13px/1.3 var(--f-body);color:var(--ink)}
+.hint{font-size:12px;color:var(--muted);line-height:1.4}
+
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);border:1px solid var(--line-strong);border-radius:4px;overflow:hidden;background:var(--field)}
+.seg label{position:relative;display:block;min-width:0}
+.seg label+label{border-left:1px solid var(--line-strong)}
+.seg input{position:absolute;inset:0;width:100%;height:100%;opacity:0;margin:0;cursor:pointer}
+.seg span{display:block;padding:7px 10px;text-align:center;color:var(--muted);font:500 13px/1.25 var(--f-body)}
+.seg span small{display:block;font:400 11px/1.3 var(--f-body);opacity:.85}
+.seg input:checked+span{background:var(--accent);color:var(--accent-ink)}
+.seg input:focus-visible+span{outline:2px solid var(--accent);outline-offset:-3px}
+.seg.sm span{padding:6px 14px}
+
+.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.field{display:grid;gap:5px;min-width:0}
+.inwrap{position:relative}
+.inwrap input,.inwrap select,select{
+  width:100%;height:40px;padding:0 38px 0 10px;border:1px solid var(--line-strong);border-radius:4px;
+  background:var(--field);color:var(--ink);font:400 15px/1 var(--f-mono);font-variant-numeric:tabular-nums;
+}
+select{padding-right:10px;font-family:var(--f-body);font-size:14px}
+.inwrap .u{position:absolute;right:10px;top:50%;transform:translateY(-50%);font:400 12px var(--f-body);color:var(--muted);pointer-events:none}
+input::placeholder{color:var(--muted);opacity:.7}
+
+.btns{display:flex;flex-wrap:wrap;gap:8px}
+.btn{
+  appearance:none;border:1px solid var(--line-strong);background:transparent;color:var(--ink);
+  border-radius:4px;padding:7px 11px;font:500 13px/1.2 var(--f-body);cursor:pointer;text-align:left
+}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn.ghost{border-color:transparent;color:var(--muted);padding-left:4px;padding-right:4px}
+.sep{border:0;border-top:1px solid var(--line);margin:0}
+
+/* results */
+.results{display:grid;gap:16px;min-width:0}
+.res-title{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:6px 12px}
+.res-title h2{font:700 24px/1.1 var(--f-display);letter-spacing:.03em;text-transform:uppercase}
+.tag{font:500 12px/1.3 var(--f-body);color:var(--muted)}
+.strip{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border:1px solid var(--line);background:var(--sheet);border-radius:4px}
+.strip>div{padding:9px 12px;border-left:1px solid var(--line);min-width:0}
+.strip>div:first-child{border-left:0}
+.strip .k{display:block;font:600 11px/1.2 var(--f-display);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:2px}
+.strip .v{display:block;font:500 15px/1.3 var(--f-mono);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+@media (max-width:560px){
+  .strip{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .strip>div:nth-child(3){border-left:0}
+  .strip>div:nth-child(n+3){border-top:1px solid var(--line)}
+}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.gcard{background:var(--sheet);border:1px solid var(--line);border-radius:4px;padding:12px 14px;display:grid;gap:10px;align-content:start;min-width:0}
+.gcard header{display:grid;gap:3px}
+.gcard h4{font:600 14px/1.3 var(--f-body);display:flex;align-items:center;gap:8px}
+.chip{flex:none;width:10px;height:10px;border-radius:2px}
+.chip.go{background:var(--go)}.chip.nogo{background:var(--nogo)}.chip.wear{background:var(--wear)}
+.gcard code{font:400 12px/1.3 var(--f-mono);color:var(--muted);overflow-wrap:anywhere}
+.make .k,.mm dt{font:600 11px/1.2 var(--f-display);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.make .val{display:block;font:500 20px/1.25 var(--f-mono);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.make .val i{font-style:normal;color:var(--muted);padding:0 .15em}
+.mm{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:0;border-top:1px solid var(--line);padding-top:8px}
+.mm dd{margin:0;font:400 14px/1.3 var(--f-mono);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.gcard.zone-go{border-top:3px solid var(--go)}
+.gcard.zone-nogo{border-top:3px solid var(--nogo)}
+.gcard.zone-wear{border-top:3px solid var(--wear)}
+
+.block{display:grid;gap:10px;min-width:0}
+.block>.sec-h{display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px 12px}
+.diagram{background:var(--sheet);border:1px solid var(--line);border-radius:4px;padding:10px 8px 6px;overflow-x:auto}
+.diagram svg{display:block}
+.d-lab{font:500 11px var(--f-body);fill:var(--muted)}
+.d-tick{font:400 11px var(--f-mono);fill:var(--ink)}
+.d-work{fill:var(--band)}
+.d-go{fill:var(--go)}.d-nogo{fill:var(--nogo)}.d-wear{fill:var(--wear)}
+.d-line{stroke:var(--line-strong);stroke-width:1;stroke-dasharray:3 3}
+.d-axis{stroke:var(--line-strong);stroke-width:1}
+
+.params{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:8px}
+.param{border:1px solid var(--line);border-radius:4px;padding:7px 10px;background:var(--sheet);display:grid;gap:1px}
+.param b{font:600 13px/1.2 var(--f-display);letter-spacing:.06em;color:var(--muted)}
+.param span{font:500 15px/1.3 var(--f-mono);font-variant-numeric:tabular-nums}
+.param span small{font:400 11px var(--f-body);color:var(--muted);margin-left:2px}
+.forms{display:grid;gap:6px}
+.forms div{display:flex;flex-wrap:wrap;justify-content:space-between;gap:2px 12px;border-bottom:1px solid var(--line);padding-bottom:6px;font-size:13px}
+.forms .num{font-size:13px}
+
+.msgs{display:grid;gap:8px;margin:0;padding:0;list-style:none}
+.msgs li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;align-items:baseline;font-size:13px}
+.msgs .b{font:600 11px/1.4 var(--f-display);letter-spacing:.12em;text-transform:uppercase;padding:1px 6px;border-radius:2px;border:1px solid var(--line-strong);color:var(--muted)}
+.msgs .b.warn{color:var(--wear);border-color:var(--wear)}
+.msgs .b.err{color:var(--nogo);border-color:var(--nogo)}
+.empty{background:var(--sheet);border:1px dashed var(--line-strong);border-radius:4px;padding:22px 18px;display:grid;gap:6px}
+.empty h3{font:600 18px/1.2 var(--f-display);letter-spacing:.04em;text-transform:uppercase}
+.empty p{color:var(--muted);max-width:60ch}
+.foot{font-size:12px;color:var(--muted);max-width:90ch;display:grid;gap:4px}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+
+
+@media print{
+  body{background:#fff;padding:0;color:#13202b}
+  .page{max-width:none;gap:10px}
+  .tb,.panel,.gcard,.strip,.diagram,.param{break-inside:avoid;box-shadow:none}
+  .layout{grid-template-columns:minmax(0,300px) minmax(0,1fr);gap:10px}
+  .btns{display:none}
+  .panel,.gcard,.strip,.diagram,.param{background:#fff}
+}
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="tb">
+    <div><span class="k">Gauge dimensions</span><h1>Plain Gauge Calculator</h1></div>
+    <div><span class="k">Standard</span><span class="v num">IS 3455 : 1971</span></div>
+    <div><span class="k">Covers</span><span class="v">Plain work up to 500 mm</span></div>
+    <div><span class="k">Reference temp.</span><span class="v num">20 °C</span></div>
+  </header>
+
+  <div class="layout">
+    <form class="panel" id="form" autocomplete="off" aria-label="Workpiece inputs">
+      <h2 class="sec-h">Workpiece</h2>
+
+      <fieldset>
+        <legend>Feature to gauge</legend>
+        <div class="seg" id="seg-kind">
+          <label><input type="radio" name="kind" id="kind-hole" value="hole" checked><span>Hole<small>plug gauge</small></span></label>
+          <label><input type="radio" name="kind" id="kind-shaft" value="shaft"><span>Shaft<small>ring or snap gauge</small></span></label>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Units</legend>
+        <div class="seg sm" id="seg-units">
+          <label><input type="radio" name="units" id="units-mm" value="mm" checked><span>Millimetres</span></label>
+          <label><input type="radio" name="units" id="units-in" value="in"><span>Inches</span></label>
+        </div>
+      </fieldset>
+
+      <div class="two">
+        <div class="field">
+          <label class="lab" for="inp-max">Maximum limit (G)</label>
+          <div class="inwrap"><input id="inp-max" type="text" inputmode="decimal" placeholder="25.162"><span class="u" data-unit>mm</span></div>
+        </div>
+        <div class="field">
+          <label class="lab" for="inp-min">Minimum limit (K)</label>
+          <div class="inwrap"><input id="inp-min" type="text" inputmode="decimal" placeholder="25.110"><span class="u" data-unit>mm</span></div>
+        </div>
+      </div>
+      <div class="field">
+        <label class="lab" for="inp-nom">Nominal size (optional)</label>
+        <div class="inwrap"><input id="inp-nom" type="text" inputmode="decimal" placeholder="25"><span class="u" data-unit>mm</span></div>
+        <p class="hint">Picks the size range in the tables. Left blank, the mean of the limits is rounded and used.</p>
+      </div>
+
+      <div class="field">
+        <label class="lab" for="sel-grade">Work tolerance grade</label>
+        <select id="sel-grade"></select>
+        <p class="hint">Auto reads the grade from G − K. A tolerance that is not tabulated takes the next higher one (clause 10.2.2).</p>
+      </div>
+
+      <fieldset id="fs-form">
+        <legend>Plug gauge form</legend>
+        <div class="seg sm">
+          <label><input type="radio" name="form" id="form-cyl" value="cyl" checked><span>Cylindrical</span></label>
+          <label><input type="radio" name="form" id="form-sph" value="sph"><span>Spherical</span></label>
+        </div>
+        <p class="hint" id="form-hint">Spherical plug, disc and rod gauges use Hs. It is tabulated above 6 mm.</p>
+      </fieldset>
+
+      <hr class="sep">
+      <div class="btns">
+        <button type="button" class="btn" id="ex-hole">Example: 25 C9 hole</button>
+        <button type="button" class="btn" id="ex-shaft">Example: 270 +0 / −0.05 shaft</button>
+        <button type="button" class="btn ghost" id="btn-clear">Clear</button>
+      </div>
+    </form>
+
+    <section class="results" id="results" aria-live="polite"></section>
+  </div>
+
+  <footer class="foot">
+    <p>Values follow IS 3455 : 1971 (reaffirmed 2006): Tables 1 to 3 and the formulae in clause 11.1. Sizes above 500 mm and grades outside IT5 to IT16 are not covered. Check critical work against your own copy of the standard.</p>
+    <p>Form tolerances use IT1 to IT5 values for the grades named in Table 1.</p>
+  </footer>
+</div>
+
+<script>
+/* IS 3455 : 1971 core data + calculation. Table values are micrometres (um). */
+var RANGES = [[0,3],[3,6],[6,10],[10,18],[18,30],[30,50],[50,80],[80,120],[120,180],[180,250],[250,315],[315,400],[400,500]];
+var HOLE_G = [6,7,8,9,10,11,12,13,14,15,16];
+var SHAFT_G = [5,6,7,8,9,10,11,12,13,14,15,16];
+
+/* ISO / IS 919 fundamental tolerances IT1..IT7 per range (um); used for form tolerance (Table 1) */
+var IT = {
+  1:[0.8,1,1,1.2,1.5,1.5,2,2.5,3.5,4.5,6,7,8],
+  2:[1.2,1.5,1.5,2,2.5,2.5,3,4,5,7,8,9,10],
+  3:[2,2.5,2.5,3,4,4,5,6,8,10,12,13,15],
+  4:[3,4,4,5,6,7,8,10,12,14,16,18,20],
+  5:[4,5,6,8,9,11,13,15,18,20,23,25,27],
+  6:[6,8,9,11,13,16,19,22,25,29,32,36,40],
+  7:[10,12,15,18,21,25,30,35,40,46,52,57,63]
+};
+
+/* Table 2 (holes), cells as printed. H,Hs = 6 cells [g6, g7-8, g9-10, g11-12, g13-14, g15-16];
+   Y = [g6,g7,g8] (0 beyond); Z = 7 cells up to 180 mm [g6,g7,g8,g9-10,g11-12,g13-14,g15-16], 11 cells above. */
+var HOLE_RAW = [
+ {T:[6,10,14,25,40,60,100,140,250,400,600], H:[.6,1,1,2,5,5], Hs:null, Y:[1,1.5,3], Z:[1,1.5,2,5,10,20,40]},
+ {T:[8,12,18,30,48,75,120,180,300,480,750], H:[.75,1.25,1.25,2.5,6,6], Hs:null, Y:[1,1.5,3], Z:[1.5,2,3,6,12,24,48]},
+ {T:[9,15,22,36,58,90,150,220,360,580,900], H:[.75,1.25,1.25,3,7.5,7.5], Hs:[.75,.75,.75,2,4.5,4.5], Y:[1,1.5,3], Z:[1.5,2,3,7,14,28,56]},
+ {T:[11,18,27,43,70,110,180,270,430,700,1100], H:[1,1.5,1.5,4,9,9], Hs:[1,1,1,2.5,5.5,5.5], Y:[1.5,2,4], Z:[2,2.5,4,8,16,32,64]},
+ {T:[13,21,33,52,84,130,210,330,520,840,1300], H:[1.25,2,2,4.5,10.5,10.5], Hs:[1.25,1.25,1.25,3,6.5,6.5], Y:[1.5,3,4], Z:[2,3,5,9,19,36,72]},
+ {T:[16,25,39,62,100,160,250,390,620,1000,1600], H:[1.25,2,2,5.5,12.5,12.5], Hs:[1.25,1.25,1.25,3.5,8,8], Y:[2,3,5], Z:[2.5,3.5,6,11,22,42,80]},
+ {T:[19,30,46,74,120,190,300,460,740,1200,1900], H:[1.5,2.5,2.5,6.5,15,15], Hs:[1.5,1.5,1.5,4,9.5,9.5], Y:[2,3,5], Z:[2.5,4,7,13,25,48,90]},
+ {T:[22,35,54,87,140,220,350,540,870,1400,2200], H:[2,3,3,7.5,17.5,17.5], Hs:[2,2,2,5,11,11], Y:[3,4,6], Z:[3,5,8,15,28,54,100]},
+ {T:[25,40,63,100,160,250,400,630,1000,1600,2500], H:[2.5,4,4,9,20,20], Hs:[2.5,2.5,2.5,6,12.5,12.5], Y:[3,4,6], Z:[4,6,9,18,32,60,110]},
+ {T:[29,46,72,115,185,290,460,720,1150,1850,2900], H:[3.5,5,5,10,23,23], Hs:[3.5,3.5,3.5,7,14.5,14.5], Y:[4,6,7], Z:[5,7,12,21,24,40,45,80,100,170,210], A:[2,3,4,4,7,10,15,25,45,70,110]},
+ {T:[32,52,81,130,210,320,520,810,1300,2100,3200], H:[4,6,6,11.5,26,26], Hs:[4,4,4,8,16,16], Y:[5,7,9], Z:[6,8,14,24,27,45,50,90,110,190,240], A:[3,4,6,6,9,15,20,35,55,90,140]},
+ {T:[36,57,89,140,230,360,570,890,1400,2300,3600], H:[4.5,6.5,6.5,12.5,28.5,28.5], Hs:[4.5,4.5,4.5,9,18,18], Y:[6,8,9], Z:[7,10,16,28,32,50,65,100,125,210,280], A:[4,6,7,7,11,15,30,45,70,110,180]},
+ {T:[40,63,97,155,250,400,630,970,1550,2500,4000], H:[5,7.5,7.5,13.5,31.5,31.5], Hs:[5,5,5,10,20,20], Y:[7,9,11], Z:[8,11,18,32,37,55,70,110,145,240,320], A:[5,7,9,9,14,20,35,55,90,140,220]}
+];
+
+/* Table 3 (shafts). H1,Hp = 7 cells [g5, g6-7, g8, g9-10, g11-12, g13-14, g15-16].
+   Y1 up to 180 mm = [g5, g6-7, g8] (0 beyond); above 180 = [g5,g6,g7,g8].
+   Z1 up to 180 = 7 cells [g5, g6-7, g8, g9-10, g11-12, g13-14, g15-16]; above 180 = 11 cells [g5, g6-7, g8, g9..g16]. A1 = 12 cells. */
+var SHAFT_RAW = [
+ {T:[4,6,10,14,25,40,60,100,140,250,400,600], H:[.6,1,1.5,1.5,2,5,5], Hp:[.4,.4,.6,.6,.6,1,1], Y:[1,1.5,3], Z:[1,1.5,2,5,10,20,40]},
+ {T:[5,8,12,18,30,48,75,120,180,300,480,750], H:[.75,1.25,2,2,2.5,6,6], Hp:[.5,.5,.75,.75,.75,1.25,1.25], Y:[1,1.5,3], Z:[1,2,3,6,12,24,48]},
+ {T:[6,9,15,22,36,58,90,150,220,360,580,900], H:[.75,1.25,2,2,3,7.5,7.5], Hp:[.5,.5,.75,.75,.75,1.25,1.25], Y:[1,1.5,3], Z:[1,2,3,7,14,28,56]},
+ {T:[8,11,18,27,43,70,110,180,270,430,700,1100], H:[1,1.5,2.5,2.5,4,9,9], Hp:[.6,.6,1,1,1,1.5,1.5], Y:[1.5,2,4], Z:[1.5,2.5,4,8,16,32,64]},
+ {T:[9,13,21,33,52,84,130,210,330,520,840,1300], H:[1.25,2,3,3,4.5,10.5,10.5], Hp:[.75,.75,1.25,1.25,1.25,2,2], Y:[2,3,4], Z:[1.5,3,5,9,19,36,72]},
+ {T:[11,16,25,39,62,100,160,250,390,620,1000,1600], H:[1.25,2,3.5,3.5,5.5,12.5,12.5], Hp:[.75,.75,1.25,1.25,1.25,2,2], Y:[2,3,5], Z:[2,3.5,6,11,22,42,80]},
+ {T:[13,19,30,46,74,120,190,300,460,740,1200,1900], H:[1.5,2.5,4,4,6.5,15,15], Hp:[1,1,1.5,1.5,1.5,2.5,2.5], Y:[2,3,5], Z:[2,4,7,13,25,48,90]},
+ {T:[15,22,35,54,87,140,220,350,540,870,1400,2200], H:[2,3,5,5,7.5,17.5,17.5], Hp:[1.25,1.25,2,2,2,3,3], Y:[3,4,6], Z:[2.5,5,8,15,28,54,100]},
+ {T:[18,25,40,63,100,160,250,400,630,1000,1600,2500], H:[2.5,4,6,6,9,20,20], Hp:[1.75,1.75,2.5,2.5,2.5,4,4], Y:[3,4,6], Z:[3,6,9,18,32,60,110]},
+ {T:[20,29,46,72,115,185,290,460,720,1150,1850,2900], H:[3.5,5,7,7,10,23,23], Hp:[2.25,2.25,3.5,3.5,3.5,5,5], Y:[3,5,6,7], Z:[4,7,12,21,24,40,45,80,100,170,210], A:[1,2,3,4,4,7,10,15,25,45,70,110]},
+ {T:[23,32,52,81,130,210,320,520,810,1300,2100,3200], H:[4,6,8,8,11.5,26,26], Hp:[3,3,4,4,4,6,6], Y:[3,6,7,9], Z:[5,8,14,24,27,45,50,90,110,190,240], A:[1.5,3,4,6,6,9,15,20,35,55,90,140]},
+ {T:[25,36,57,89,140,230,360,570,890,1400,2300,3600], H:[4.5,6.5,9,9,12.5,28.5,28.5], Hp:[3.5,3.5,4.5,4.5,4.5,6.5,6.5], Y:[4,6,8,9], Z:[6,10,16,28,32,50,65,100,125,210,280], A:[2.5,4,6,7,7,11,15,30,45,70,110,180]},
+ {T:[27,40,63,97,155,250,400,630,970,1550,2500,4000], H:[5,7.5,10,10,13.5,31.5,31.5], Hp:[4,4,5,5,5,7.5,7.5], Y:[4,7,9,11], Z:[7,11,18,32,37,55,70,110,145,240,320], A:[3,5,7,9,9,14,20,35,55,90,140,220]}
+];
+
+function rep(cells, counts){ var out=[]; for(var i=0;i<cells.length;i++){ for(var k=0;k<counts[i];k++) out.push(cells[i]); } return out; }
+function pad(arr, n){ var o=arr.slice(); while(o.length<n) o.push(0); return o; }
+
+function expandHole(r, ri){
+  var over = ri >= 9;
+  return {
+    T: r.T,
+    H2: rep(r.H, [1,2,2,2,2,2]),
+    Hs2: r.Hs ? rep(r.Hs, [1,2,2,2,2,2]) : null,
+    Y: pad(r.Y, 11),
+    Z: over ? r.Z : rep(r.Z, [1,1,1,2,2,2,2]),
+    A: over ? r.A : null
+  };
+}
+function expandShaft(r, ri){
+  var over = ri >= 9;
+  return {
+    T: r.T,
+    H12: rep(r.H, [1,2,1,2,2,2,2]),
+    Hp2: rep(r.Hp, [1,2,1,2,2,2,2]),
+    Y1: over ? pad(r.Y, 12) : pad(rep(r.Y, [1,2,1]), 12),
+    Z1: over ? [r.Z[0], r.Z[1], r.Z[1]].concat(r.Z.slice(2)) : rep(r.Z, [1,2,1,2,2,2,2]),
+    A1: over ? r.A : null
+  };
+}
+var HOLE = HOLE_RAW.map(expandHole);
+var SHAFT = SHAFT_RAW.map(expandShaft);
+
+/* Table 1: IT grade for form tolerance of gauges, by workpiece grade group */
+function formGroup(g){ if(g<=6) return 0; if(g===7) return 1; if(g<=10) return 2; if(g<=12) return 3; return 4; }
+var FORM_IT = {
+  plug: [1,2,2,4,5],
+  sph:  [1,1,1,3,5],
+  ring: [2,2,3,4,5],
+  ref:  [1,1,1,1,2]
+};
+function formTol(kind, g, ri){
+  if(g < 6) return null;
+  var n = FORM_IT[kind][formGroup(g)];
+  return IT[n][ri];
+}
+
+function rangeIndex(d){
+  for(var i=0;i<RANGES.length;i++){ if(d > RANGES[i][0] && d <= RANGES[i][1]) return i; }
+  return -1;
+}
+
+/* inputs in mm: {kind:'hole'|'shaft', G, K, D (optional), grade:'auto'|number, form:'cyl'|'sph'} */
+function compute(inp){
+  var res = {ok:false, errors:[], warnings:[], notes:[]};
+  var G = inp.G, K = inp.K;
+  if(!isFinite(G) || !isFinite(K)){ res.errors.push('Enter both the maximum and minimum limit of size.'); return res; }
+  if(K <= 0 || G <= 0){ res.errors.push('Limits of size must be positive.'); return res; }
+  if(G <= K){ res.errors.push('The maximum limit must be larger than the minimum limit.'); return res; }
+
+  var D = inp.D, assumed = false;
+  if(!isFinite(D) || D <= 0){ D = Math.round((G + K) / 2); if(D <= 0) D = (G + K) / 2; assumed = true; }
+  var ri = rangeIndex(D);
+  if(ri < 0){ res.errors.push('IS 3455 covers nominal sizes above 0 and up to 500 mm. This size is outside that range.'); return res; }
+  var riG = rangeIndex(G), riK = rangeIndex(K);
+  if(assumed){
+    res.notes.push('Nominal size taken as ' + D + ' mm (mean of the limits, rounded). Enter it if the real nominal differs.');
+    if(riG !== riK) res.warnings.push('The limits sit in different size ranges. Enter the nominal size to pick the right table row.');
+  }
+
+  var hole = inp.kind === 'hole';
+  var over = ri >= 9;
+  var tab = hole ? HOLE[ri] : SHAFT[ri];
+  var grades = hole ? HOLE_G : SHAFT_G;
+  var Tcalc = (G - K) * 1000;
+
+  var gi = -1, exact = false;
+  if(inp.grade === 'auto' || inp.grade == null){
+    for(var i=0;i<tab.T.length;i++){ if(tab.T[i] >= Tcalc - 0.0005){ gi = i; break; } }
+    if(gi < 0){ res.errors.push('The work tolerance (' + trim(Tcalc,3) + ' µm) is larger than IT16 for this size. The tables stop at IT16.'); return res; }
+    exact = Math.abs(tab.T[gi] - Tcalc) < 0.0005;
+    if(!exact) res.notes.push('Work tolerance ' + trim(Tcalc,3) + ' µm is not tabulated. The next higher value, ' + tab.T[gi] + ' µm (IT' + grades[gi] + '), is used, as clause 10.2.2 directs.');
+    if(Tcalc < tab.T[0] - 0.0005) res.warnings.push('This work tolerance is tighter than IT' + grades[0] + ', the finest grade the standard tabulates for ' + (hole ? 'holes' : 'shafts') + '. Treat the result with caution.');
+  } else {
+    gi = grades.indexOf(+inp.grade);
+    if(gi < 0){ res.errors.push('IT' + inp.grade + ' is not tabulated for ' + (hole ? 'holes' : 'shafts') + '.'); return res; }
+    exact = Math.abs(tab.T[gi] - Tcalc) < 0.0005;
+    if(!exact) res.warnings.push('The entered tolerance is ' + trim(Tcalc,3) + ' µm, but IT' + grades[gi] + ' in this size range is ' + tab.T[gi] + ' µm. Gauge values follow the grade you chose.');
+  }
+  var g = grades[gi];
+
+  var out = {
+    kind: inp.kind, D: D, ri: ri, range: RANGES[ri], over: over, grade: g,
+    Ttable: tab.T[gi], Tcalc: Tcalc, exact: exact, assumed: assumed,
+    params: [], members: [], refs: [], form: []
+  };
+  var mm = function(u){ return u / 1000; };
+
+  if(hole){
+    var useSph = inp.form === 'sph';
+    if(useSph && !tab.Hs2){ useSph = false; res.notes.push('Spherical gauge tolerance Hs is tabulated only above 6 mm. Cylindrical H was used.'); }
+    var H2 = tab.H2[gi], Hs2 = tab.Hs2 ? tab.Hs2[gi] : null, y = tab.Y[gi], z = tab.Z[gi], a = over ? tab.A[gi] : 0;
+    var tolSel = useSph ? Hs2 : H2, tolSelSym = useSph ? 'Hs/2' : 'H/2';
+    var tolGo = over ? tolSel : H2, tolGoSym = over ? tolSelSym : 'H/2';
+    out.params.push(['T', tab.T[gi]], ['H/2', H2]);
+    if(Hs2 != null) out.params.push(['Hs/2', Hs2]);
+    out.params.push(['y', y], ['z', z]);
+    if(over) out.params.push(['α', a]);
+
+    out.members.push({
+      key:'go', name:'GO plug, new', formula: 'K + z ± ' + tolGoSym,
+      basic: K + mm(z), tol: mm(tolGo), kind:'zone'
+    });
+    out.members.push({
+      key:'wear', name:'GO plug, wear limit', formula: over ? 'K − y + α' : 'K − y',
+      basic: K - mm(y) + mm(a), tol: 0, kind:'limit'
+    });
+    out.members.push({
+      key:'nogo', name:'NO GO plug', formula: (over ? 'G − α' : 'G') + ' ± ' + tolSelSym,
+      basic: G - mm(a), tol: mm(tolSel), kind:'zone'
+    });
+    var fk = useSph ? 'sph' : 'plug';
+    out.form.push({name: useSph ? 'Spherical plug / disc gauge' : 'Cylindrical plug / bar gauge', val: formTol(fk, g, ri), it: FORM_IT[fk][formGroup(g)]});
+    out.formNote = 'cl. 10.2.3, Table 1';
+  } else {
+    var H12 = tab.H12[gi], Hp2 = tab.Hp2[gi], y1 = tab.Y1[gi], z1 = tab.Z1[gi], a1 = over ? tab.A1[gi] : 0;
+    out.params.push(['T', tab.T[gi]], ['H₁/2', H12], ['Hp/2', Hp2], ['y₁', y1], ['z₁', z1]);
+    if(over) out.params.push(['α₁', a1]);
+    out.members.push({
+      key:'go', name:'GO ring / snap, new', formula: 'G − z₁ ± H₁/2',
+      basic: G - mm(z1), tol: mm(H12), kind:'zone'
+    });
+    out.members.push({
+      key:'wear', name:'GO ring / snap, wear limit', formula: over ? 'G + y₁ − α₁' : 'G + y₁',
+      basic: G + mm(y1) - mm(a1), tol: 0, kind:'limit'
+    });
+    out.members.push({
+      key:'nogo', name:'NO GO ring / snap', formula: (over ? 'K + α₁' : 'K') + ' ± H₁/2',
+      basic: K + mm(a1), tol: mm(H12), kind:'zone'
+    });
+    out.refs.push({
+      key:'rgo', name:'Reference disk, GO new', formula: 'G − z₁ ± Hp/2',
+      basic: G - mm(z1), tol: mm(Hp2), kind:'zone'
+    });
+    out.refs.push({
+      key:'rwear', name:'Reference disk, wear check', formula: (over ? 'G + y₁ − α₁' : 'G + y₁') + ' ± Hp/2',
+      basic: G + mm(y1) - mm(a1), tol: mm(Hp2), kind:'zone'
+    });
+    out.refs.push({
+      key:'rnogo', name:'Reference disk, NO GO', formula: (over ? 'K + α₁' : 'K') + ' ± Hp/2',
+      basic: K + mm(a1), tol: mm(Hp2), kind:'zone'
+    });
+    out.form.push({name:'Ring / gap gauge', val: formTol('ring', g, ri), it: g >= 6 ? FORM_IT.ring[formGroup(g)] : null});
+    out.form.push({name:'Reference disk', val: formTol('ref', g, ri), it: g >= 6 ? FORM_IT.ref[formGroup(g)] : null});
+    out.formNote = 'cl. 10.2.3 and 10.3.3, Table 1';
+  }
+  out.G = G; out.K = K;
+  var all = out.members.concat(out.refs);
+  all.forEach(function(m){ m.max = m.basic + m.tol; m.min = m.basic - m.tol; });
+  res.ok = true; res.data = out;
+  return res;
+}
+
+function trim(v, dp){ var s = (+v).toFixed(dp); if(s.indexOf('.')>=0) s = s.replace(/0+$/,'').replace(/\.$/,''); return s; }
+
+if(typeof module !== 'undefined') module.exports = {RANGES:RANGES, HOLE:HOLE, SHAFT:SHAFT, IT:IT, compute:compute, rangeIndex:rangeIndex, formTol:formTol, HOLE_G:HOLE_G, SHAFT_G:SHAFT_G};
+
+</script>
+<script>
+(function(){
+  var $ = function(id){ return document.getElementById(id); };
+  var state = { example: 'hole' };
+  var lastData = null;
+
+  function parseNum(s){
+    s = String(s == null ? '' : s).trim().replace(',', '.');
+    if(s === '') return NaN;
+    return /^[+-]?(\d+\.?\d*|\.\d+)$/.test(s) ? parseFloat(s) : NaN;
+  }
+  function getRadio(name){ var r = document.querySelector('input[name="' + name + '"]:checked'); return r ? r.value : null; }
+  function setRadio(id){ $(id).checked = true; }
+  function toMM(v, units){ return units === 'in' ? v * 25.4 : v; }
+
+  function fmt(mmVal, units){
+    var v = units === 'in' ? mmVal / 25.4 : mmVal;
+    if(Math.abs(v) < 1e-12) v = 0;
+    var dp = units === 'in' ? 7 : 5, minDp = units === 'in' ? 4 : 3;
+    var s = v.toFixed(dp), i = s.indexOf('.'), end = s.length;
+    while(end > i + 1 + minDp && s.charAt(end - 1) === '0') end--;
+    return s.slice(0, end);
+  }
+  function um(v){ return trim(v, 3); }
+  function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+
+  function buildGrades(keep){
+    var kind = getRadio('kind'), sel = $('sel-grade');
+    var list = kind === 'hole' ? HOLE_G : SHAFT_G;
+    var html = '<option value="auto">Auto (from G − K)</option>';
+    list.forEach(function(g){ html += '<option value="' + g + '">IT' + g + '</option>'; });
+    sel.innerHTML = html;
+    sel.value = (keep && list.indexOf(+keep) >= 0) ? keep : 'auto';
+  }
+
+  function syncFormField(){
+    var hole = getRadio('kind') === 'hole';
+    $('fs-form').hidden = !hole;
+  }
+  function setUnitLabels(){
+    var u = getRadio('units') === 'in' ? 'in' : 'mm';
+    document.querySelectorAll('[data-unit]').forEach(function(n){ n.textContent = u; });
+    $('inp-max').placeholder = u === 'mm' ? '25.162' : '0.99055';
+    $('inp-min').placeholder = u === 'mm' ? '25.110' : '0.98850';
+    $('inp-nom').placeholder = u === 'mm' ? '25' : '1';
+  }
+
+  function readInputs(){
+    var units = getRadio('units');
+    var G = parseNum($('inp-max').value), K = parseNum($('inp-min').value), D = parseNum($('inp-nom').value);
+    return {
+      raw: {G: $('inp-max').value.trim(), K: $('inp-min').value.trim()},
+      units: units,
+      kind: getRadio('kind'),
+      form: getRadio('form'),
+      grade: $('sel-grade').value,
+      G: isFinite(G) ? toMM(G, units) : NaN,
+      K: isFinite(K) ? toMM(K, units) : NaN,
+      D: isFinite(D) ? toMM(D, units) : NaN
+    };
+  }
+
+  function card(m, units){
+    var cls = (m.key === 'go' || m.key === 'rgo') ? 'go' : (m.key === 'nogo' || m.key === 'rnogo') ? 'nogo' : 'wear';
+    var body;
+    if(m.kind === 'limit'){
+      body = '<div class="make"><span class="k">Wear limit size</span><span class="val">' + fmt(m.basic, units) + '</span></div>';
+    } else {
+      body = '<div class="make"><span class="k">Make to</span><span class="val">' + fmt(m.basic, units) + '<i>±</i>' + fmt(m.tol, units) + '</span></div>' +
+             '<dl class="mm"><div><dt>Max</dt><dd>' + fmt(m.max, units) + '</dd></div><div><dt>Min</dt><dd>' + fmt(m.min, units) + '</dd></div></dl>';
+    }
+    return '<article class="gcard zone-' + cls + '"><header><h4><span class="chip ' + cls + '"></span>' + esc(m.name) + '</h4><code>' + esc(m.formula) + '</code></header>' + body + '</article>';
+  }
+
+  function renderDiagram(){
+    var host = $('diagram');
+    if(!host || !lastData) return;
+    var d = lastData.d, units = lastData.units;
+    var hole = d.kind === 'hole';
+    var by = {}; d.members.forEach(function(m){ by[m.key] = m; });
+    var w = Math.max(280, Math.floor(host.clientWidth - 16));
+    var padL = 10, padR = 10, laneH = 44, top = 6, barH = 14;
+    var lanes = [
+      {label: 'Work tolerance, K to G', lo: d.K, hi: d.G, cls: 'd-work'},
+      {label: 'NO GO ' + (hole ? 'plug' : 'ring / snap'), lo: by.nogo.min, hi: by.nogo.max, cls: 'd-nogo'},
+      {label: 'GO ' + (hole ? 'plug' : 'ring / snap') + ', new', lo: by.go.min, hi: by.go.max, cls: 'd-go'},
+      {label: 'GO wear limit', mark: by.wear.basic, cls: 'd-wear'}
+    ];
+    var vals = [d.K, d.G];
+    lanes.forEach(function(l){ if(l.mark != null) vals.push(l.mark); else { vals.push(l.lo); vals.push(l.hi); } });
+    var mn = Math.min.apply(null, vals), mx = Math.max.apply(null, vals), span = mx - mn;
+    var pad = span * 0.08, lo = mn - pad, hi = mx + pad;
+    var x = function(v){ return padL + (v - lo) / (hi - lo) * (w - padL - padR); };
+    var H = top + lanes.length * laneH + 26;
+    var s = '<svg role="img" aria-label="Tolerance zones of the gauge members against the work tolerance" width="' + w + '" height="' + H + '" viewBox="0 0 ' + w + ' ' + H + '">';
+    var yEnd = top + lanes.length * laneH;
+    s += '<line class="d-line" x1="' + x(d.K) + '" x2="' + x(d.K) + '" y1="' + top + '" y2="' + (yEnd + 4) + '"/>';
+    s += '<line class="d-line" x1="' + x(d.G) + '" x2="' + x(d.G) + '" y1="' + top + '" y2="' + (yEnd + 4) + '"/>';
+    lanes.forEach(function(l, i){
+      var y0 = top + i * laneH;
+      s += '<text class="d-lab" x="' + padL + '" y="' + (y0 + 12) + '">' + esc(l.label) + '</text>';
+      var by0 = y0 + 18;
+      if(l.mark != null){
+        var cx = x(l.mark), cy = by0 + barH / 2;
+        s += '<polygon class="' + l.cls + '" points="' + cx + ',' + (cy - 8) + ' ' + (cx + 6) + ',' + cy + ' ' + cx + ',' + (cy + 8) + ' ' + (cx - 6) + ',' + cy + '"><title>' + esc(fmt(l.mark, units)) + '</title></polygon>';
+      } else {
+        var x0 = x(l.lo), wd = Math.max(3, x(l.hi) - x(l.lo));
+        s += '<rect class="' + l.cls + '" x="' + x0 + '" y="' + by0 + '" width="' + wd + '" height="' + barH + '" rx="1"><title>' + esc(fmt(l.lo, units) + ' to ' + fmt(l.hi, units)) + '</title></rect>';
+      }
+    });
+    s += '<line class="d-axis" x1="' + padL + '" x2="' + (w - padR) + '" y1="' + (yEnd + 4) + '" y2="' + (yEnd + 4) + '"/>';
+    s += '<text class="d-tick" text-anchor="start" x="' + (x(d.K) + 4) + '" y="' + (yEnd + 20) + '">K ' + esc(fmt(d.K, units)) + '</text>';
+    s += '<text class="d-tick" text-anchor="end" x="' + (x(d.G) - 4) + '" y="' + (yEnd + 20) + '">G ' + esc(fmt(d.G, units)) + '</text>';
+    s += '</svg>';
+    host.innerHTML = s;
+  }
+
+  function msgList(items){
+    if(!items.length) return '';
+    return '<ul class="msgs">' + items.map(function(it){
+      return '<li><span class="b ' + it[0] + '">' + (it[0] === 'err' ? 'Check' : it[0] === 'warn' ? 'Check' : 'Note') + '</span><span>' + esc(it[1]) + '</span></li>';
+    }).join('') + '</ul>';
+  }
+
+  function render(){
+    var inp = readInputs();
+    var out = $('results');
+    var title = '<div class="res-title"><h2>Gauge dimensions</h2><span class="tag">' + (state.example === 'hole' ? 'Worked example, clause 11.2: 25 C9 plug gauge' : state.example === 'shaft' ? 'Worked example, clause 11.2: snap gauge 270 +0 / −0.05' : '') + '</span></div>';
+    if(!inp.raw.G && !inp.raw.K){
+      lastData = null;
+      out.innerHTML = title + '<div class="empty"><h3>Enter the limits of size</h3><p>Give the maximum and minimum limit of the workpiece. The tool reads the grade, finds the size range and returns the GO and NO GO gauge sizes with their tolerances. Nominal size is optional.</p></div>';
+      return;
+    }
+    var res = compute({kind: inp.kind, G: inp.G, K: inp.K, D: inp.D, grade: inp.grade, form: inp.form});
+    if(!res.ok){
+      lastData = null;
+      out.innerHTML = title + '<div class="empty"><h3>Cannot calculate yet</h3>' + msgList(res.errors.map(function(e){ return ['err', e]; })) + '</div>';
+      return;
+    }
+    var d = res.data, units = inp.units, hole = d.kind === 'hole';
+    lastData = {d: d, units: units};
+
+    var rangeTxt = d.range[0] + ' to ' + d.range[1] + ' mm';
+    var strip = '<div class="strip">' +
+      '<div><span class="k">Size range</span><span class="v">' + rangeTxt + '</span></div>' +
+      '<div><span class="k">Grade</span><span class="v">IT' + d.grade + '</span></div>' +
+      '<div><span class="k">Work tolerance T</span><span class="v">' + um(d.Ttable) + ' µm</span></div>' +
+      '<div><span class="k">Source</span><span class="v">Table ' + (hole ? '2' : '3') + '</span></div></div>';
+
+    var cards = '<div class="cards">' + d.members.map(function(m){ return card(m, units); }).join('') + '</div>';
+    var refs = '';
+    if(d.refs.length){
+      refs = '<div class="block"><h3 class="sec-h"><span>Reference disks for gap gauges</span><span class="tag" style="text-transform:none;letter-spacing:0;font-family:var(--f-body);font-weight:400">clause 10.3, formulae in 11.1</span></h3><div class="cards">' +
+        d.refs.map(function(m){ return card(m, units); }).join('') + '</div></div>';
+    }
+    var diag = '<div class="block"><h3 class="sec-h"><span>Tolerance zones</span><span class="tag" style="text-transform:none;letter-spacing:0;font-family:var(--f-body);font-weight:400">Drawn to scale along the size axis, as in Fig. 9</span></h3><div class="diagram" id="diagram"></div></div>';
+
+    var params = '<div class="params">' + d.params.map(function(p){
+      return '<div class="param"><b>' + esc(p[0]) + '</b><span>' + um(p[1]) + '<small>µm</small></span></div>';
+    }).join('') + '</div>';
+    var forms = '';
+    var fl = d.form.filter(function(f){ return f.val != null; });
+    if(fl.length){
+      forms = '<div class="forms">' + fl.map(function(f){
+        return '<div><span>' + esc(f.name) + ' form tolerance, max</span><span class="num">IT' + f.it + ' = ' + fmt(f.val / 1000, units) + ' ' + units + '</span></div>';
+      }).join('') + '</div>';
+    }
+    var used = '<div class="block"><h3 class="sec-h"><span>Values read from the standard</span><span class="tag" style="text-transform:none;letter-spacing:0;font-family:var(--f-body);font-weight:400">' + rangeTxt + ', IT' + d.grade + '</span></h3>' + params + forms + '</div>';
+
+    var msgs = [];
+    res.warnings.forEach(function(w){ msgs.push(['warn', w]); });
+    res.notes.forEach(function(n){ msgs.push(['note', n]); });
+    if(inp.units === 'in') msgs.push(['note', 'Inch entries are converted at 25.4 mm per inch. The standard’s tables are metric.']);
+    var m = msgList(msgs);
+
+    out.innerHTML = title + strip + cards + refs + diag + used + (m ? '<div class="block">' + m + '</div>' : '');
+    renderDiagram();
+  }
+
+  function convertFields(from, to){
+    ['inp-max', 'inp-min', 'inp-nom'].forEach(function(id){
+      var el = $(id), v = parseNum(el.value);
+      if(!isFinite(v)) return;
+      var mm = from === 'in' ? v * 25.4 : v;
+      var nv = to === 'in' ? mm / 25.4 : mm;
+      el.value = String(+nv.toFixed(to === 'in' ? 6 : 5));
+    });
+  }
+
+  function loadExample(which){
+    state.example = which;
+    setRadio('units-mm'); setUnitLabels();
+    if(which === 'hole'){
+      setRadio('kind-hole'); $('inp-max').value = '25.162'; $('inp-min').value = '25.110'; $('inp-nom').value = '25';
+    } else {
+      setRadio('kind-shaft'); $('inp-max').value = '270.000'; $('inp-min').value = '269.950'; $('inp-nom').value = '270';
+    }
+    setRadio('form-cyl');
+    buildGrades('auto'); syncFormField(); render();
+  }
+
+  var prevUnits = 'mm';
+  $('form').addEventListener('submit', function(e){ e.preventDefault(); });
+  $('form').addEventListener('input', function(e){
+    if(e.target.type === 'text') state.example = null;
+    render();
+  });
+  document.querySelectorAll('input[name="kind"]').forEach(function(r){
+    r.addEventListener('change', function(){ state.example = null; buildGrades($('sel-grade').value); syncFormField(); render(); });
+  });
+  document.querySelectorAll('input[name="units"]').forEach(function(r){
+    r.addEventListener('change', function(){
+      var now = getRadio('units');
+      if(now !== prevUnits){ convertFields(prevUnits, now); prevUnits = now; }
+      setUnitLabels(); render();
+    });
+  });
+  document.querySelectorAll('input[name="form"], #sel-grade').forEach(function(el){
+    el.addEventListener('change', function(){ state.example = null; render(); });
+  });
+  $('ex-hole').addEventListener('click', function(){ prevUnits = 'mm'; loadExample('hole'); });
+  $('ex-shaft').addEventListener('click', function(){ prevUnits = 'mm'; loadExample('shaft'); });
+  $('btn-clear').addEventListener('click', function(){
+    state.example = null;
+    ['inp-max', 'inp-min', 'inp-nom'].forEach(function(id){ $(id).value = ''; });
+    $('sel-grade').value = 'auto';
+    render(); $('inp-max').focus();
+  });
+
+  if(typeof ResizeObserver !== 'undefined'){
+    var lastW = 0;
+    new ResizeObserver(function(){
+      var h = $('diagram'); if(!h) return;
+      var w = Math.floor(h.clientWidth);
+      if(w !== lastW){ lastW = w; renderDiagram(); }
+    }).observe($('results'));
+  } else {
+    window.addEventListener('resize', renderDiagram);
+  }
+
+  setUnitLabels();
+  loadExample('hole');
+})();
+</script>
+</body>
+</html>

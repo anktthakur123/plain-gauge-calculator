@@ -1,0 +1,61 @@
+plugins {
+    id 'com.android.application'
+}
+
+def appVersionCode = (project.findProperty('appVersionCode') ?: '1').toString().toInteger()
+def appVersionName = (project.findProperty('appVersionName') ?: '1.0.0').toString()
+def githubOwner = (System.getenv('GITHUB_OWNER') ?: project.findProperty('githubOwner') ?: 'YOUR_GITHUB_USERNAME').toString()
+def githubRepo = (System.getenv('GITHUB_REPO') ?: project.findProperty('githubRepo') ?: 'plain-gauge-calculator').toString()
+def signingKeyFile = file('signing/release-keystore.jks')
+
+def signingStorePassword = System.getenv('ANDROID_KEYSTORE_PASSWORD') ?: ''
+def signingKeyAlias = System.getenv('ANDROID_KEY_ALIAS') ?: ''
+def signingKeyPassword = System.getenv('ANDROID_KEY_PASSWORD') ?: ''
+
+android {
+    namespace 'com.magfit.gaugecalculator'
+    compileSdk 35
+
+    buildFeatures {
+        buildConfig true
+    }
+
+    defaultConfig {
+        applicationId 'com.magfit.gaugecalculator'
+        minSdk 23
+        targetSdk 34
+        versionCode appVersionCode
+        versionName appVersionName
+        buildConfigField 'String', 'GITHUB_OWNER', '"' + githubOwner.replace('\\', '\\\\').replace('"', '\\"') + '"'
+        buildConfigField 'String', 'GITHUB_REPO', '"' + githubRepo.replace('\\', '\\\\').replace('"', '\\"') + '"'
+    }
+
+    signingConfigs {
+        release {
+            storeFile signingKeyFile
+            storePassword signingStorePassword
+            keyAlias signingKeyAlias
+            keyPassword signingKeyPassword
+        }
+    }
+
+    buildTypes {
+        debug {
+            applicationIdSuffix '.debug'
+            versionNameSuffix '-debug'
+        }
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.release
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation 'androidx.core:core:1.15.0'
+}
